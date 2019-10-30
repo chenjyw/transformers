@@ -343,13 +343,17 @@ class GPT2Model(GPT2PreTrainedModel):
         last_hidden_states = outputs[0]  # The last hidden-state is the first element of the output tuple
 
     """
-    def __init__(self, config):
+    def __init__(self, config, word_embeddings=None):
         super(GPT2Model, self).__init__(config)
         self.output_hidden_states = config.output_hidden_states
         self.output_attentions = config.output_attentions
         self.output_past = config.output_past
 
-        self.wte = nn.Embedding(config.vocab_size, config.n_embd)
+        if word_embeddings:
+            self.wte = nn.Embedding(config.vocab_size, config.n_embd)
+        else:
+            self.wte = config.word_embeddings
+
         self.wpe = nn.Embedding(config.n_positions, config.n_embd)
         self.drop = nn.Dropout(config.embd_pdrop)
         self.h = nn.ModuleList([Block(config.n_ctx, config, scale=True) for _ in range(config.n_layer)])
@@ -508,9 +512,9 @@ class GPT2LMHeadModel(GPT2PreTrainedModel):
         loss, logits = outputs[:2]
 
     """
-    def __init__(self, config):
+    def __init__(self, config, word_embeddings=None):
         super(GPT2LMHeadModel, self).__init__(config)
-        self.transformer = GPT2Model(config)
+        self.transformer = GPT2Model(config, word_embeddings)
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
 
         self.init_weights()
@@ -595,15 +599,15 @@ class GPT2DoubleHeadsModel(GPT2PreTrainedModel):
 
         import torch
         from transformers import GPT2Tokenizer, GPT2DoubleHeadsModel
-        
+
         tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
         model = GPT2DoubleHeadsModel.from_pretrained('gpt2')
-        
+
         # Add a [CLS] to the vocabulary (we should train it also!)
         tokenizer.add_special_tokens({'cls_token': '[CLS]'})
         model.resize_token_embeddings(len(tokenizer))  # Update the model embeddings with the new vocabulary size
         print(tokenizer.cls_token_id, len(tokenizer))  # The newly token the last token of the vocabulary
-        
+
         choices = ["Hello, my dog is cute [CLS]", "Hello, my cat is cute [CLS]"]
         encoded_choices = [tokenizer.encode(s) for s in choices]
         cls_token_location = [tokens.index(tokenizer.cls_token_id) for tokens in encoded_choices]
