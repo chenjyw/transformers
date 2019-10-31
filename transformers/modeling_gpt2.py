@@ -520,7 +520,7 @@ class GPT2LMHeadModel(GPT2PreTrainedModel):
     """
     def __init__(self, config, word_embeddings=None):
         super(GPT2LMHeadModel, self).__init__(config)
-        self.transformer = GPT2Model(config, word_embeddings)
+        self.transformer = GPT2Model(config)
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
 
         self.init_weights()
