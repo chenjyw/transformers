@@ -343,14 +343,20 @@ class GPT2Model(GPT2PreTrainedModel):
         last_hidden_states = outputs[0]  # The last hidden-state is the first element of the output tuple
 
     """
-    def __init__(self, config, word_embeddings=None):
+    def __init__(self, config):
         super(GPT2Model, self).__init__(config)
         self.output_hidden_states = config.output_hidden_states
         self.output_attentions = config.output_attentions
         self.output_past = config.output_past
 
-        if word_embeddings:
-            self.wte = nn.Embedding(config.vocab_size, config.n_embd)
+        if config.word_embeddings_path:
+            emb_tensor = torch.load(config.word_embeddings_path)
+            num_embeddings, embedding_dim = emb_tensor.size()
+            emb_layer = nn.Embedding(num_embeddings, embedding_dim)
+            emb_layer.load_state_dict({'weight': emb_tensor})
+            emb_layer.weight.requires_grad = False
+
+            self.wte = emb_layer
         else:
             self.wte = config.word_embeddings
 
